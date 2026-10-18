@@ -599,6 +599,49 @@
     @media (max-width:900px){
       .hero .stage{width:100%}
     }
+
+    /* ============================================================
+       Correção: logo do topo inteira, fixa e proporcional
+       - A seta azul passa para um ::before. O clip-path ficava no próprio link
+         que contém a logo e, no Safari do iPhone, junto do cabeçalho fixo com
+         backdrop-filter, a imagem era recortada ou desenhada deslocada ao rolar.
+       - Sem translateX/filter no hover: no celular o toque deixa o :hover preso,
+         a logo andava 4px e a faixa azul se soltava da borda da tela.
+       - A logo não encolhe no flex e mantém a proporção do arquivo (872 x 568),
+         com o mesmo tamanho no celular e no tablet.
+       ============================================================ */
+    .site-header .tag{
+      position:relative;
+      isolation:isolate;
+      flex:none;
+      clip-path:none;
+      background:transparent;
+      padding-left:max(var(--edge), calc(env(safe-area-inset-left, 0px) + var(--pad)));
+      transition:none;
+    }
+    .site-header .tag::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      z-index:-1;
+      background:var(--cyan);
+      clip-path:polygon(0 0,calc(100% - var(--tip)) 0,100% 50%,calc(100% - var(--tip)) 100%,0 100%);
+      transition:background-color .2s ease;
+    }
+    .site-header .tag:hover{transform:none;filter:none;box-shadow:none}
+    @media (hover:hover){
+      .site-header .tag:hover::before{background:var(--cyan-dark)}
+    }
+    .site-header .tag img{
+      flex:none;
+      width:clamp(108px,9vw,128px);
+      max-width:none;
+      height:auto;
+      aspect-ratio:872/568;
+    }
+    @media (max-width:640px){
+      .site-header .tag img{width:108px}
+    }
 </style>
 </head>
 <body>
