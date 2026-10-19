@@ -16,6 +16,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="assets/logo-liceu-branco.png" />
+  <script>
+    /* Abertura: aparece na primeira visita da sessão (ou sempre, com ?intro no endereço) */
+    (function(){
+      var h=document.documentElement, ver=true;
+      try{ ver = /[?&]intro\b/.test(location.search) || !sessionStorage.getItem('liceuIntro'); }catch(e){}
+      if(ver) h.classList.add('intro-on');
+    })();
+  </script>
   <style>
     /* Identidade Liceu: base neutra + acentos CMYK inspirados no logotipo. */
     :root{
@@ -97,16 +106,78 @@
     .work h2,.cta h2{font-family:var(--head);font-weight:800;font-size:clamp(2.2rem,5vw,4rem);line-height:1;letter-spacing:-.02em}
     .work h2::before{content:"";display:inline-block;width:.22em;height:.72em;background:var(--yellow);margin-right:.18em;vertical-align:.02em}
 
-    /* Foto ampliada */
-    dialog{border:0;padding:0;background:transparent;width:min(94vw,560px);max-width:none;max-height:94vh;margin:auto;overflow:visible;color:#fff}
-    dialog::backdrop{background:rgba(0,0,0,.84)}
-    dialog[open]{animation:pop .18s ease-out}
-    @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-    .dlg{background:#111;border-radius:var(--r);overflow:hidden}
-    .dlg img{width:100%;max-height:68vh;object-fit:contain;background:#000}
-    .dlg-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px 18px}
-    .dlg-foot b{font-size:1.05rem}
-    .x{position:absolute;top:-14px;right:-6px;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#000;font-size:1.5rem;line-height:1;display:grid;place-items:center;z-index:2}
+    /* ============================================================
+       Foto ampliada (lupa): só o trabalho, sem moldura, sem borda,
+       sem sombra e sem o arredondamento do card.
+       ============================================================ */
+    dialog.lb{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;outline:0;background:transparent;overflow:hidden;color:#fff}
+    dialog.lb::backdrop{background:rgba(8,13,15,.93)}
+    dialog.lb[open]{display:flex;flex-direction:column;animation:lbIn .22s ease-out}
+    @keyframes lbIn{from{opacity:0}to{opacity:1}}
+    html.lb-open{overflow:hidden}
+    .lb-stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:68px clamp(16px,8vw,110px) 8px}
+    .lb-stage img{
+      display:block;width:auto;height:auto;max-width:100%;
+      max-height:calc(100vh - 200px);max-height:calc(100svh - 200px);
+      object-fit:contain;border:0;border-radius:0;box-shadow:none;outline:0;background:none;
+      transition:opacity .25s ease
+    }
+    .lb-stage img.loading{opacity:0}
+    .lb-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;width:min(100%,820px);margin:0 auto;padding:12px 20px calc(22px + env(safe-area-inset-bottom,0px))}
+    .lb-info{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .lb-cat{font-size:.72rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:#8fdcf2}
+    .lb-info b{font-family:var(--head);font-size:1.15rem;line-height:1.2}
+    .lb-count{font-size:.85rem;color:rgba(255,255,255,.6)}
+    .lb-x,.lb-nav{position:absolute;z-index:3;display:grid;place-items:center;width:46px;height:46px;padding:0;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;transition:background .2s,color .2s}
+    .lb-x:hover,.lb-nav:hover{background:#fff;color:#000}
+    .lb-x{top:14px;right:14px;font-size:1.7rem;line-height:1}
+    .lb-nav{top:calc(50% - 60px)}
+    .lb-nav svg{width:22px;height:22px}
+    .lb-nav.prev{left:clamp(8px,2vw,28px)}
+    .lb-nav.next{right:clamp(8px,2vw,28px)}
+    .lb-nav[hidden]{display:none}
+    @media (max-width:640px){
+      .lb-stage{padding:64px 0 6px}
+      .lb-stage img{max-height:calc(100vh - 250px);max-height:calc(100svh - 250px)}
+      .lb-nav{width:40px;height:40px;background:rgba(0,0,0,.5)}
+      .lb-foot{flex-direction:column;align-items:stretch;padding:12px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+      .lb-foot .btn{width:100%}
+    }
+
+    /* ============================================================
+       Abertura: a logo é "impressa" por uma passada das cores CMYK
+       ============================================================ */
+    .intro{display:none}
+    html.intro-on .intro{
+      display:grid;place-items:center;position:fixed;inset:0;z-index:200;
+      background:var(--ink);color:#fff;border-bottom:6px solid var(--cyan)
+    }
+    html.intro-on:not(.ready) body{overflow:hidden}
+    .intro-inner{display:grid;justify-items:center;gap:26px;width:min(78vw,320px);transition:opacity .25s ease,transform .25s ease}
+    .intro-logo{position:relative;width:min(62vw,240px)}
+    .intro-logo img{width:100%;height:auto;clip-path:inset(0 100% 0 0);animation:introReveal 1.05s cubic-bezier(.7,0,.25,1) .3s forwards}
+    .intro-head{position:absolute;top:-10%;bottom:-10%;left:0;width:10px;display:flex;gap:2px;transform:translateX(-50%);animation:introHead 1.05s cubic-bezier(.7,0,.25,1) .3s forwards}
+    .intro-head i{flex:1}
+    .intro-head i:nth-child(1){background:var(--cyan)}
+    .intro-head i:nth-child(2){background:var(--magenta)}
+    .intro-head i:nth-child(3){background:var(--yellow)}
+    .intro-bar{width:100%;height:3px;background:rgba(255,255,255,.12);overflow:hidden}
+    .intro-bar i{display:block;height:100%;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,var(--cyan) 0 33.33%,var(--magenta) 33.33% 66.66%,var(--yellow) 66.66%);transition:transform .35s ease}
+    .intro-meta{font-size:.74rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--logo-gray);opacity:0;animation:introFade .5s ease 1.15s forwards}
+    @keyframes introReveal{to{clip-path:inset(0 0 0 0)}}
+    @keyframes introHead{0%{left:0;opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
+    @keyframes introFade{to{opacity:1}}
+    .intro.is-done .intro-inner{opacity:0;transform:translateY(-10px)}
+    .intro.is-done{animation:introOut .7s cubic-bezier(.7,0,.25,1) .12s forwards}
+    @keyframes introOut{to{transform:translateY(-100%)}}
+    /* Entrada suave do topo logo após a abertura */
+    html.intro-on:not(.ready) .hero-copy,html.intro-on:not(.ready) .show{opacity:0;transform:translateY(18px)}
+    html.intro-on .hero-copy,html.intro-on .show{transition:opacity .7s ease .35s,transform .7s cubic-bezier(.2,.7,.2,1) .35s}
+    @media (prefers-reduced-motion:reduce){
+      .intro-logo img{clip-path:none}
+      .intro-head{display:none}
+      .intro-meta{opacity:1}
+    }
 
     /* Contato: centralizado */
     .cta{padding-block:clamp(56px,8vw,110px);background:var(--soft);text-align:center;position:relative}
@@ -503,23 +574,15 @@
     .proj-media{position:relative;display:block;width:100%;aspect-ratio:4/5;padding:0;border:0;background:#e9f1f4;overflow:hidden;cursor:zoom-in}
     .proj-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
     .proj:hover .proj-media img{transform:scale(1.04)}
+    /* fit:'contain' na lista: foto mais larga que o card aparece inteira sobre fundo claro */
+    .proj-media--contain{background:#f5f6f6}
+    .proj-media--contain img{object-fit:contain}
     .proj-zoom{position:absolute;right:12px;bottom:12px;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.96);color:var(--ink);box-shadow:0 6px 16px rgba(0,0,0,.2);transition:background .2s,color .2s}
     .proj-media:hover .proj-zoom{background:var(--magenta);color:#fff}
     .proj-body{display:flex;flex-direction:column;gap:6px;flex:1;padding:18px 20px 22px}
     .proj-cat{font-size:.72rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--magenta)}
     .proj-title{font-family:var(--head);font-weight:700;font-size:1.2rem;line-height:1.2;letter-spacing:-.01em}
 
-    /* Foto ampliada */
-    .dlg{background:#fff;color:var(--ink)}
-    .dlg-stage{position:relative;background:#0c1417}
-    .dlg-stage img{display:block;width:100%;max-height:66vh;object-fit:contain;background:transparent}
-    .nav{position:absolute;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:46px;height:46px;padding:0 0 3px;border:0;border-radius:50%;background:rgba(255,255,255,.94);color:#000;font-size:1.7rem;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.25)}
-    .nav[hidden]{display:none}
-    .nav.prev{left:10px}.nav.next{right:10px}
-    .nav:hover{background:var(--magenta);color:#fff}
-    .dlg-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 18px;padding:18px 20px 20px}
-    .dlg-info{display:flex;flex-direction:column;gap:4px;min-width:0}
-    .dlg-info b{font-family:var(--head);font-size:1.15rem;line-height:1.2}
 
     @media (max-width:900px){
       .projects{gap:16px}
@@ -552,28 +615,6 @@
       .proj-body{gap:4px;padding:12px 12px 16px}
       .proj-cat{font-size:.62rem;letter-spacing:.09em}
       .proj-title{font-size:.95rem;line-height:1.22}
-
-      /* Foto ampliada vira painel na parte de baixo da tela */
-      dialog{width:100vw;max-width:100vw;margin:auto 0 0}
-      dialog[open]{animation:sheet .26s cubic-bezier(.2,.8,.2,1)}
-      @keyframes sheet{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
-      .dlg{border-radius:22px 22px 0 0}
-      .dlg-stage img{max-height:56vh}
-      .x{top:-54px;right:14px}
-      .dlg-foot{flex-direction:column;align-items:stretch;padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px))}
-      .dlg-foot .btn{width:100%}
-    }
-
-
-    /* Foto ampliada: imagem inteira dentro do box */
-    dialog{width:min(94vw,600px)}
-    .dlg-stage{overflow:hidden;background:#0c1417}
-    .dlg-stage .bg{position:absolute;inset:-14%;background-size:cover;background-position:center;filter:blur(26px) saturate(1.1);opacity:.9}
-    .dlg-stage img{position:relative;z-index:1;display:block;width:auto;height:auto;max-width:100%;max-height:72vh;margin:0 auto;object-fit:contain}
-    .dlg-stage .nav{z-index:2}
-    @media (max-width:640px){
-      dialog{width:100vw}
-      .dlg-stage img{max-height:58vh}
     }
 
     /* Correção: cabeçalho em largura total, alinhado pela largura real do bloco (sem usar 100vw) */
@@ -604,6 +645,17 @@
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="wa" d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.25-1.37A9.9 9.9 0 1 0 12.04 2Zm0 1.8a8.1 8.1 0 1 1-4.13 15.08l-.3-.17-3.11.81.83-3.03-.2-.31A8.1 8.1 0 0 1 12.04 3.8Zm-3.1 3.9c-.2 0-.5.07-.77.36-.26.3-1 1-1 2.45s1.03 2.84 1.17 3.04c.15.2 2.03 3.23 5 4.4 2.47.97 2.97.78 3.5.73.54-.05 1.73-.7 1.97-1.39.25-.68.25-1.27.17-1.39-.07-.12-.27-.2-.56-.34-.3-.15-1.73-.86-2-.95-.27-.1-.47-.15-.66.15-.2.3-.76.95-.93 1.15-.17.2-.34.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.64-2.05-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.66-1.6-.91-2.18-.24-.57-.48-.5-.66-.5Z"/></defs></svg>
+
+<div class="intro" id="intro" aria-hidden="true">
+  <div class="intro-inner">
+    <div class="intro-logo">
+      <img src="assets/logo-liceu-branco.png" alt="" width="240" height="156" />
+      <span class="intro-head"><i></i><i></i><i></i></span>
+    </div>
+    <div class="intro-bar"><i id="introBar"></i></div>
+    <span class="intro-meta">Recife · desde 1967</span>
+  </div>
+</div>
 
 <header class="site-header">
   <div class="wrap top">
@@ -714,7 +766,7 @@
             <span class="foot-label">Telefones</span>
             <div class="contact-row">
               <a href="tel:+558134238566">(81) 3423-8566</a>
-        
+              <a href="https://wa.me/5581992620120" target="_blank" rel="noopener">(81) 99262-0120 · WhatsApp</a>
             </div>
           </div>
 
@@ -750,25 +802,27 @@
 
 
 
-<dialog id="dlg" aria-label="Foto ampliada">
-  <button class="x" id="dlgClose" type="button" aria-label="Fechar">×</button>
-  <div class="dlg">
-    <div class="dlg-stage">
-      <span class="bg" id="dlgBg"></span>
-      <img id="dlgImg" alt="" />
-      <button class="nav prev" id="dlgPrev" type="button" aria-label="Projeto anterior">‹</button>
-      <button class="nav next" id="dlgNext" type="button" aria-label="Próximo projeto">›</button>
+<dialog id="dlg" class="lb" aria-label="Foto ampliada">
+  <button class="lb-x" id="dlgClose" type="button" aria-label="Fechar">×</button>
+  <div class="lb-stage">
+    <img id="dlgImg" alt="" />
+  </div>
+  <button class="lb-nav prev" id="dlgPrev" type="button" aria-label="Projeto anterior">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <button class="lb-nav next" id="dlgNext" type="button" aria-label="Próximo projeto">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <div class="lb-foot">
+    <div class="lb-info">
+      <span class="lb-cat" id="dlgCat"></span>
+      <b id="dlgTitle"></b>
+      <span class="lb-count" id="dlgCount"></span>
     </div>
-    <div class="dlg-foot">
-      <div class="dlg-info">
-        <span class="proj-cat" id="dlgCat"></span>
-        <b id="dlgTitle"></b>
-      </div>
-      <a class="btn btn--dark" id="dlgWa" href="#" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><use href="#wa"/></svg>
-        Solicitar orçamento
-      </a>
-    </div>
+    <a class="btn btn--dark" id="dlgWa" href="#" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><use href="#wa"/></svg>
+      Solicitar orçamento
+    </a>
   </div>
 </dialog>
 
@@ -782,6 +836,16 @@
        cats    = abas onde aparece: livros, cadernos, caixas, kits, folders
      ============================================================ */
   const TRABALHOS = [
+    { src:'assets/livro-linha-mar.webp',            nome:'Livro Linha Mar, capa dura', alt:'Livro de capa dura Linha Mar, de Rafael Segatto Barboza da Silva, com capa em papel kraft e ilustração branca', cats:['livros'] },
+    { src:'assets/sacola-rodolfo-barauna.webp',     nome:'Sacola Rodolfo Baraúna',    alt:'Sacola de papel azul-marinho e dourada da Rodolfo Baraúna Cirurgia Plástica, com alça de fita dourada', cats:['sacolas'], fit:'contain' },
+    { src:'assets/box-livros-everaldo-lopes-ferreira.webp', nome:'Box com quatro livros', alt:'Box cinza com os quatro livros de Everaldo Lopes Ferreira, com lombadas em amarelo, marrom, verde e roxo', cats:['livros','caixas'] },
+    { src:'assets/porta-copos-pontal-dos-carneiros.webp', nome:'Porta-copos Pontal dos Carneiros', alt:'Porta-copos redondos da Pontal dos Carneiros Bungalows, em preto com folhagens e em amarelo com ilustração de bangalô', cats:['hotelaria'], fit:'contain' },
+    { src:'assets/caixa-daniella-gouveia-de-melo.webp', nome:'Caixa rígida personalizada', alt:'Caixa rígida bege com logotipo de Daniella Gouveia de Melo, Medicina e Longevidade, aberta com uma carteira verde dentro', cats:['caixas'] },
+    { src:'assets/livro-voce-conhece-alguem-que-mora-no-ceu.webp', nome:'Livro infantil Você conhece alguém que mora no céu?', alt:'Dois exemplares do livro infantil Você conhece alguém que mora no céu?, de Paloma Freitas, com ilustração de balão em forma de coração', cats:['livros'] },
+    { src:'assets/sacola-arteouro.webp',            nome:'Sacola Arteouro',           alt:'Sacola de papel amarela da Arteouro com alça de fita preta', cats:['sacolas'] },
+    { src:'assets/aviso-de-porta-pontal-dos-carneiros.webp', nome:'Avisos de porta Pontal dos Carneiros', alt:'Avisos de porta bilíngues da Pontal dos Carneiros Bungalows: ambiente limpo e não desejamos limpeza', cats:['hotelaria'], fit:'contain' },
+    { src:'assets/caixa-quebra-cabeca-juntae.webp', nome:'Quebra-cabeça Juntaê',      alt:'Caixa do quebra-cabeça Juntaê, no ritmo do samba junino, aberta com as peças coloridas espalhadas', cats:['caixas'] },
+    { src:'assets/sacola-catfish.webp',             nome:'Sacola Catfish',            alt:'Sacola de papel kraft da Catfish com logotipo preto e alça de fita preta', cats:['sacolas'] },
     { src:'assets/projeto-livro-pandemia.webp', nome:'Livro O Zíper na Pandemia da COVID-19', alt:'Livro impresso O Zíper na Pandemia da COVID-19 fotografado sobre fundo claro', cats:['livros'] },
     { src:'assets/projeto-materiais-personalizados.webp', nome:'Materiais gráficos personalizados', alt:'Conjunto de materiais impressos personalizados em azul, laranja e preto', cats:['folders'] },
     { src:'assets/projeto-kit-corporativo-preto.webp', nome:'Kit corporativo personalizado', alt:'Kit corporativo preto com garrafa, caneta e caderno personalizados', cats:['kits'] },
@@ -809,7 +873,37 @@
 
 
   /* Monta uma imagem que nunca é cortada: foto inteira + fundo desfocado da própria foto */
-  const cover = t => '<span class="bg" style="background-image:url(\'' + t.src + '\')"></span><img src="' + t.src + '" alt="' + t.alt + '" loading="lazy">';
+  const cover = t => '<span class="bg" style="background-image:url(\'' + t.src + '\')"></span><img src="' + t.src + '" alt="' + t.alt + '" loading="lazy" decoding="async">';
+
+  /* ---------- Abertura: a barra acompanha o carregamento real (logo, 1ª imagem do topo e fontes) ---------- */
+  (function () {
+    const html = document.documentElement;
+    const intro = document.getElementById('intro');
+    if (!intro || !html.classList.contains('intro-on')) { html.classList.add('ready'); if (intro) intro.remove(); return; }
+    const semMov = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const bar = document.getElementById('introBar');
+    const img = src => new Promise(r => { const i = new Image(); i.onload = i.onerror = r; i.src = src; });
+    const tarefas = [img('assets/logo-liceu-branco.png'), img(TOPO[0].src)];
+    if (document.fonts && document.fonts.ready) tarefas.push(document.fonts.ready);
+    let feitas = 0;
+    tarefas.forEach(p => p.then(() => { feitas++; bar.style.transform = 'scaleX(' + (feitas / tarefas.length) + ')'; }));
+    /* Tempo mínimo = duração da animação da logo (não é espera artificial). Limite de 5 s para conexões lentas. */
+    const animacao = new Promise(r => setTimeout(r, semMov ? 150 : 1450));
+    const limite = new Promise(r => setTimeout(r, 5000));
+    let fim = false;
+    Promise.race([Promise.all(tarefas.concat(animacao)), limite]).then(() => {
+      if (fim) return; fim = true;
+      bar.style.transform = 'scaleX(1)';
+      setTimeout(() => {
+        intro.classList.add('is-done');
+        html.classList.add('ready');
+        try { sessionStorage.setItem('liceuIntro', '1'); } catch (e) {}
+        const tira = () => { if (intro.isConnected) intro.remove(); html.classList.remove('intro-on'); };
+        intro.addEventListener('animationend', e => { if (e.animationName === 'introOut') tira(); });
+        setTimeout(tira, semMov ? 50 : 1100);
+      }, semMov ? 0 : 220);
+    });
+  })();
 
   /* ---------- Topo: a foto muda de projeto ---------- */
   const stage = document.getElementById('stage');
@@ -850,7 +944,9 @@
     { k:'livros',   n:'Livros' },
     { k:'cadernos', n:'Cadernos e agendas' },
     { k:'caixas',   n:'Caixas e presentes' },
+    { k:'sacolas',  n:'Sacolas personalizadas' },
     { k:'kits',     n:'Kits corporativos' },
+    { k:'hotelaria',n:'Peças para hotelaria' },
     { k:'folders',  n:'Institucional e promocional' }
   ];
   const catNome = k => (CATEGORIAS.find(c => c.k === k) || {}).n || '';
@@ -864,8 +960,8 @@
     const el = document.createElement('article');
     el.className = 'proj'; el.dataset.cat = t.cats.join(' ');
     el.innerHTML =
-      '<button class="proj-media" type="button" data-i="' + i + '" aria-label="Ampliar foto: ' + esc(t.nome) + '">' +
-        '<img src="' + t.src + '" alt="' + esc(t.alt) + '" loading="lazy">' +
+      '<button class="proj-media' + (t.fit === 'contain' ? ' proj-media--contain' : '') + '" type="button" data-i="' + i + '" aria-label="Ampliar foto: ' + esc(t.nome) + '">' +
+        '<img src="' + t.src + '" alt="' + esc(t.alt) + '" loading="lazy" decoding="async">' +
         '<span class="proj-zoom">' + ICON_ZOOM + '</span>' +
       '</button>' +
       '<div class="proj-body">' +
@@ -914,20 +1010,27 @@
   /* Foto ampliada: imagem completa, com navegação entre os projetos visíveis (setas, teclado e deslize) */
   const dlg = document.getElementById('dlg');
   const dlgImg = document.getElementById('dlgImg');
-  const dlgBg = document.getElementById('dlgBg');
   let atual = null;
+  dlgImg.addEventListener('load', () => dlgImg.classList.remove('loading'));
+  dlgImg.addEventListener('error', () => dlgImg.classList.remove('loading'));
   function abre(t) {
     atual = t;
-    dlgImg.src = t.src; dlgImg.alt = t.alt;
-    dlgBg.style.backgroundImage = "url('" + t.src + "')";
+    const v = visiveis();
+    const pos = v.indexOf(t);
+    if (dlgImg.getAttribute('src') !== t.src) { dlgImg.classList.add('loading'); dlgImg.src = t.src; }
+    dlgImg.alt = t.alt;
     document.getElementById('dlgTitle').textContent = t.nome;
     document.getElementById('dlgCat').textContent = catNome(t.cats[0]);
+    document.getElementById('dlgCount').textContent = v.length > 1 ? (pos + 1) + ' de ' + v.length : '';
     document.getElementById('dlgWa').href = msgWa(t.nome);
-    const multi = visiveis().length > 1;
+    const multi = v.length > 1;
     document.getElementById('dlgPrev').hidden = !multi;
     document.getElementById('dlgNext').hidden = !multi;
-    if (!dlg.open) dlg.showModal();
+    /* Pré-carrega as fotos vizinhas para a troca ser imediata */
+    if (multi) [v[(pos + 1) % v.length], v[(pos - 1 + v.length) % v.length]].forEach(n => { new Image().src = n.src; });
+    if (!dlg.open) { dlg.showModal(); document.documentElement.classList.add('lb-open'); }
   }
+  dlg.addEventListener('close', () => document.documentElement.classList.remove('lb-open'));
   function passa(d) {
     const v = visiveis(); if (v.length < 2) return;
     const i = v.indexOf(atual);
@@ -939,7 +1042,8 @@
   document.getElementById('dlgPrev').addEventListener('click', () => passa(-1));
   document.getElementById('dlgNext').addEventListener('click', () => passa(1));
   document.getElementById('dlgClose').addEventListener('click', () => dlg.close());
-  dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+  /* Fecha ao clicar fora da foto (o ESC já é nativo do <dialog>) */
+  dlg.addEventListener('click', e => { if (!e.target.closest('img, button, a, .lb-info')) dlg.close(); });
   dlg.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft') passa(-1);
     if (e.key === 'ArrowRight') passa(1);
